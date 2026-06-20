@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BurnDetectionDialog</class>
+ <widget class="QDialog" name="BurnDetectionDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>650</width>
+    <height>750</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>🔥 Детекция лесных гарей (UNETR)</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   
+   <!-- ВХОДНЫЕ СЛОИ -->
+   <item>
+    <widget class="QGroupBox" name="groupBox_inputs">
+     <property name="title">
+      <string>📂 Входные данные</string>
+     </property>
+     <layout class="QVBoxLayout" name="layout_inputs">
+      
+      <!-- Маска -->
+      <item>
+       <layout class="QHBoxLayout" name="layout_mask">
+        <item>
+         <widget class="QLabel" name="label_mask">
+          <property name="text">
+           <string>Слой-маска (опционально):</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QgsMapLayerComboBox" name="combo_mask">
+          <property name="filters">
+           <set>QgsMapLayerProxyModel::PolygonLayer</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      
+      <!-- Растр -->
+      <item>
+       <layout class="QHBoxLayout" name="layout_raster">
+        <item>
+         <widget class="QLabel" name="label_raster">
+          <property name="text">
+           <string>Растровый слой (Sentinel-2):</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QgsMapLayerComboBox" name="combo_raster">
+          <property name="filters">
+           <set>QgsMapLayerProxyModel::RasterLayer</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      
+     </layout>
+    </widget>
+   </item>
+   
+   <!-- ВЫБОР МОДЕЛИ -->
+   <item>
+    <widget class="QGroupBox" name="groupBox_model">
+     <property name="title">
+      <string>🤖 Модель</string>
+     </property>
+     <layout class="QVBoxLayout" name="layout_model">
+      
+      <item>
+       <layout class="QHBoxLayout" name="layout_model_select">
+        <item>
+         <widget class="QLabel" name="label_model">
+          <property name="text">
+           <string>Выберите модель:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="combo_model">
+          <item>
+           <property name="text">
+            <string>3 канала (SWIR, NIR, Red)</string>
+           </property>
+           <property name="userData" stdset="0">
+            <string>3ch</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>11 каналов (B2-B9, B8A, B11, B12)</string>
+           </property>
+           <property name="userData" stdset="0">
+            <string>11ch</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      
+      <item>
+       <widget class="QLabel" name="label_model_info">
+        <property name="text">
+         <string>📝 3 канала: SWIR (B12), NIR (B8), Red (B4)</string>
+        </property>
+        <property name="styleSheet">
+         <string>color: blue; font-style: italic; background-color: #f0f8ff; padding: 5px;</string>
+        </property>
+       </widget>
+      </item>
+      
+     </layout>
+    </widget>
+   </item>
+   
+   <!-- ПАРАМЕТРЫ -->
+   <item>
+    <widget class="QGroupBox" name="groupBox_params">
+     <property name="title">
+      <string>⚙️ Параметры</string>
+     </property>
+     <layout class="QVBoxLayout" name="layout_params">
+      
+      <!-- THRESHOLD -->
+      <item>
+       <layout class="QHBoxLayout" name="layout_threshold">
+        <item>
+         <widget class="QLabel" name="label_threshold">
+          <property name="text">
+           <string>THRESHOLD (порог):</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="spin_threshold">
+          <property name="minimum">
+           <double>0.0</double>
+          </property>
+          <property name="maximum">
+           <double>1.0</double>
+          </property>
+          <property name="value">
+           <double>0.5</double>
+          </property>
+          <property name="singleStep">
+           <double>0.05</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      
+      <!-- MIN_BURN_AREA_PX -->
+      <item>
+       <layout class="QHBoxLayout" name="layout_area">
+        <item>
+         <widget class="QLabel" name="label_area">
+          <property name="text">
+           <string>MIN_BURN_AREA_PX:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spin_area">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>10000</number>
+          </property>
+          <property name="value">
+           <number>100</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      
+      <!-- PIXEL_RESOLUTION -->
+      <item>
+       <layout class="QHBoxLayout" name="layout_resolution">
+        <item>
+         <widget class="QLabel" name="label_resolution">
+          <property name="text">
+           <string>PIXEL_RESOLUTION_M:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spin_resolution">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>100</number>
+          </property>
+          <property name="value">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      
+      <!-- OUTPUT FOLDER -->
+      <item>
+       <layout class="QHBoxLayout" name="layout_output">
+        <item>
+         <widget class="QLabel" name="label_output">
+          <property name="text">
+           <string>Папка для результатов:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="line_output">
+          <property name="placeholderText">
+           <string>Выберите папку...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_output">
+          <property name="text">
+           <string>📁</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      
+     </layout>
+    </widget>
+   </item>
+   
+   <!-- ПРОГРЕСС -->
+   <item>
+    <widget class="QProgressBar" name="progress_bar">
+     <property name="value">
+      <number>0</number>
+     </property>
+    </widget>
+   </item>
+   
+   <!-- ЛОГ -->
+   <item>
+    <widget class="QTextEdit" name="text_log">
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+     <property name="placeholderText">
+      <string>Лог выполнения...</string>
+     </property>
+     <property name="maximumHeight">
+      <number>150</number>
+     </property>
+    </widget>
+   </item>
+   
+   <!-- КНОПКИ -->
+   <item>
+    <layout class="QHBoxLayout" name="layout_buttons">
+     <item>
+      <widget class="QPushButton" name="btn_run">
+       <property name="text">
+        <string>🚀 Запустить анализ</string>
+       </property>
+       <property name="styleSheet">
+        <string>background-color: green; color: white; font-weight: bold; padding: 10px;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_cancel">
+       <property name="text">
+        <string>❌ Отмена</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   
+  </layout>
+ </widget>
+ 
+ <!-- Custom widgets -->
+ <customwidgets>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsmaplayercombobox.h</header>
+  </customwidget>
+ </customwidgets>
+ 
+ <resources/>
+ <connections/>
+</ui>

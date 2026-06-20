@@ -1,0 +1,108 @@
+import os
+import numpy as np
+import pandas as pd
+import torch
+from torch.utils.data import Dataset, DataLoader
+from pathlib import Path
+import torchvision.transforms.functional as TF
+import tifffile
+import glob
+from torchvision import transforms as T
+
+class SatelliteBurnDataset(Dataset):
+    def __init__(self, base_dirs, csv_path, fold_colors, img_size=(512, 512), augment=False):
+        self.base_dirs = [Path(d) for d in base_dirs]
+        self.csv_path = Path(csv_path)
+        self.fold_colors = fold_colors
+        self.img_size = img_size
+        self.augment = augment # Включить аугментацию?
+        
+        self.df = pd.read_csv(csv_path, sep=';')
+        self.filtered_df = self.df[self.df['fold'].isin(fold_colors)].reset_index(drop=True)
+        print(f"✅ Загружено {len(self.filtered_df)} примеров для fold'ов: {fold_colors}")
+    
+    def __len__(self):
+        return len(self.filtered_df)
+    
+    def _find_folder(self, folder_name):
+        for base_dir in self.base_dirs:
+            folder_path = base_dir / folder_name
+            if folder_path.exists():
+                return folder_path
+        raise FileNotFoundError(f"Папка {folder_name} не найдена")
+    
+    def _load_sentinel2(self, folder_path):
+        s2_files = sorted(glob.glob(str(folder_path / "sentinel2_*.tiff")))
+        if not s2_files:
+            raise FileNotFoundError(f"Sentinel-2 файлы не найдены в {folder_path}")
+        
+        s2_file = s2_files[-1]
+        img = tifffile.imread(s2_file).astype(np.float32)
+        
+        # Приводим к (C, H, W)
+        if img.ndim == 3:
+            img = np.transpose(img, (2, 0, 1))
+        else:
+            img = np.expand_dims(img, 0)
+        
+        # Приводим к 13 каналам (как при обучении)
+        if img.shape[0] < 13:
+            padding = np.zeros((13 - img.shape[0], *img.shape[1:]), dtype=np.float32)
+            img = np.concatenate([img, padding], axis=0)
+        elif img.shape[0] > 13:
+            img = img[:13]
+            
+        img = np.clip(img, 0, 1)
+        return img
+    
+    def _load_mask(self, folder_path):
+        mask_files = list(glob.glob(str(folder_path / "*_mask.tiff"))) + \
+                     list(glob.glob(str(folder_path / "*_mask.png")))
+        if not mask_files:
+            raise FileNotFoundError(f"Маска не найдена в {folder_path}")
+            
+        mask = tifffile.imread(mask_files[0]).astype(np.float32)
+        mask = (mask > 0).astype(np.float32) # Бинаризация
+        return mask
+    
+    def __getitem__(self, idx):
+        row = self.filtered_df.iloc[idx]
+        folder_name = row['folder']
+        folder_path = self._find_folder(folder_name)
+        
+        img = self._load_sentinel2(folder_path)
+        mask = self._load_mask(folder_path)
+        
+        # Аугментация (только для обучения)
+        if self.augment:
+            # Случайный горизонтальный и вертикальный переворот
+            if np.random.random() > 0.5:
+                img = np.flip(img, axis=2).copy() # W
+                mask = np.flip(mask, axis=1).copy()
+            if np.random.random() > 0.5:
+                img = np.flip(img, axis=1).copy() # H
+                mask = np.flip(mask, axis=0).copy()
+        
+        # Ресайз
+        if img.shape[1:] != self.img_size:
+            img_tensor = torch.from_numpy(img)
+            mask_tensor = torch.from_numpy(mask).unsqueeze(0)
+            
+            img_tensor = TF.resize(img_tensor, self.img_size, antialias=True)
+            mask_tensor = TF.resize(mask_tensor, self.img_size, 
+                                   interpolation=TF.InterpolationMode.NEAREST)
+            img = img_tensor.numpy()
+            mask = mask_tensor.squeeze(0).numpy()
+            
+        return torch.from_numpy(img), torch.from_numpy(mask).unsqueeze(0)
+
+def get_dataloaders(csv_path, base_dirs, train_folds, val_folds, 
+                   batch_size=2, num_workers=2, img_size=(512, 512)):
+    train_dataset = SatelliteBurnDataset(base_dirs, csv_path, train_folds, img_size, augment=True) # Аугментация для train
+    val_dataset = SatelliteBurnDataset(base_dirs, csv_path, val_folds, img_size, augment=False)    # Без аугментации для val
+    
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, 
+                             shuffle=True, num_workers=num_workers, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, 
+                           shuffle=False, num_workers=num_workers, pin_memory=True)
+    return train_loader, val_loader

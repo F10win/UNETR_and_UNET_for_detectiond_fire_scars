@@ -1,0 +1,20 @@
+[general]
+name=Burn Detection UNETR
+qgisMinimumVersion=3.0
+qgisMaximumVersion=3.99
+description=Детекция лесных гарей с использованием модели UNETR
+version=1.0
+author=Your Name
+email=your.email@example.com
+
+about=Плагин для автоматического обнаружения лесных гарей на спутниковых снимках Sentinel-2 с использованием нейронной сети UNETR.
+
+tracker=https://github.com/yourusername/burn_detection/issues
+repository=https://github.com/yourusername/burn_detection
+
+category=Plugins
+icon=icon.png
+experimental=False
+deprecated=False
+
+server=False
